@@ -40,6 +40,7 @@ description: >
 - Each element receives **exactly one** tier. Never assign two tiers to the same element — this indicates that the element needs to be decomposed into smaller parts before classifying.
 - The `parse_html.py` script **never** decides tiers. It only extracts structure (tag, id, classes, section comment, text preview). The semantic decision is always the agent's responsibility — preserving the single responsibility principle between script (deterministic) and Skill (interpretative).
 - In case of ambiguity between two tiers, ask the user. Never assume — an incorrect classification in Phase 1 contaminates Phases 2 and 3 of the Workflow entirely.
+- The `selector` field of `tier-map.json` must be a valid and precise CSS selector, derived from the candidate: use `#id` when present; otherwise, use the most specific class (avoid generic utility classes like `btn`, `card`, `flex`). This field is consumed by downstream deterministic scripts (`component-spec-generator`) — never use free descriptive text here; that is the role of the `element` field.
 
 ## Execution Flow
 
@@ -48,7 +49,7 @@ description: >
 3. Read `candidates.json`.
 4. For each candidate, classify it into exactly one tier using the Architectural Rules table above.
 5. Discard candidates that are pure structural noise (wrappers without visual or interactive function of their own) — record this decision in the justification.
-6. Write `tier-map.json`: a list of `{element, tier, justification}` objects, with `justification` in a single line.
+6. Write `tier-map.json`: a list of `{element, tier, selector, rationale}` objects, with `rationale` in a single line and `selector` derived according to the rule above.
 7. Present `tier-map.json` to the user and stop. Do not proceed to Phase 2 of the Workflow without explicit approval.
 
 ## External References
@@ -60,14 +61,15 @@ description: >
 **Input** (entry in `candidates.json`):
 ```json
 {"tag": "button", "id": null, "classes": ["btn", "btn-primary"],
- "section_comment": "hero", "text_preview": "Get started now"}
+ "section_comment": "hero", "text_preview": "Começar agora"}
 ```
 
 **Output** (corresponding entry in `tier-map.json`):
 ```json
 {"element": "button.btn-primary (CTA in hero section)",
  "tier": "atoms",
- "justification": "Indivisible interactive unit, without composition of other elements."}
+ "selector": ".btn-primary",
+ "rationale": "Indivisible interactive unit, without composition of other elements."}
 ```
 
 **Input:**
@@ -80,7 +82,8 @@ description: >
 ```json
 {"element": "header#main-nav",
  "tier": "organisms",
- "justification": "Global navigation functional zone, composes multiple atoms (logo, links)."}
+ "selector": "#main-nav",
+ "rationale": "Global navigation functional zone, composes multiple atoms (logo, links)."}
 ```
 
 ## Validation Checklist

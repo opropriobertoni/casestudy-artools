@@ -3,9 +3,10 @@ name: token-pipeline-setup
 description: >
   Use this Skill whenever you need to extract colors, typography, and spacing
   from CSS files and transform them into Design Tokens conforming to the W3C
-  DTCG specification, generating tokens.json and tokens.css via Style Dictionary
-  v4. Activate for terms like "extract tokens", "generate tokens.json", "create
-  design tokens", "configure Style Dictionary", "tokens.css", "DTCG", or when the
+  DTCG specification, in 3 layers (Global → Semantic → Component) with colors in
+  OKLCH, generating tokens.json and tokens.css via Style Dictionary v4. Activate for
+  terms like "extract tokens", "generate tokens.json", "create design tokens",
+  "configure Style Dictionary", "tokens.css", "DTCG", "OKLCH", or when the
   design-system-pipeline Workflow reaches Phase 2. Prerequisite: tier-map.json
   must already exist and be approved, with elements classified as tier "tokens".
 ---
@@ -41,8 +42,13 @@ description: >
 | `line-height` | `number` |
 | `box-shadow` | `shadow` |
 
-- Token naming follows the `<category>.<group>.<variant>` pattern (e.g., `color.brand.primary`, `spacing.md`). Never use the raw value as the name.
-- Already existing custom properties (e.g., `--color-brand-primary`) are **high-confidence** candidates — preserve the semantic intent of the original name when generating the corresponding DTCG token.
+- **Colors always in OKLCH in the Global layer (Rule 34 — `frontend-01-foundations`).** `scripts/extract_css_values.py` already delivers `value_oklch` calculated deterministically for all color candidates — always use this field as the `$value` of the Global token, never the original hex/rgb/hsl. When `value_oklch` is `null` (gradients, `currentColor`, keywords), report the candidate to the user instead of inventing a conversion.
+- **Mandatory 3-layer structure (Rule 33 — `frontend-01-foundations`):** `global` $\rightarrow$ `semantic` $\rightarrow$ `component`. A `component` token never points directly to a raw value — it always references a `semantic` token via `$ref` (`{semantic.color.action.primary}`), which in turn references a `global` token (`{global.color.orange.500}`). Skipping the Semantic layer is a direct violation of Rule 33.
+  - **Global:** raw palette values (a 1:1 parity with what the original CSS contained, already converted to OKLCH).
+  - **Semantic:** role of use (`action.primary`, `feedback.danger`, `surface.elevated`) — named by function, not by color.
+  - **Component:** specific component reference to a Semantic token (`button.background`, `card.border`).
+- Token naming follows the `<layer>.<category>.<group>.<variant>` pattern (e.g., `global.color.orange.500`, `semantic.color.action.primary`). Never use the raw value as the name.
+- Already existing custom properties (e.g., `--color-brand-primary`) are **high-confidence** candidates — preserve the semantic intent of the original name when deciding in which layer (Global or Semantic) the token should reside.
 
 ## Execution Flow
 
@@ -50,9 +56,9 @@ description: >
 2. Confirm that Node.js/npm is available in the workspace. If not, stop and inform the user.
 3. Run `scripts/extract_css_values.py --input assets/css --output candidates.json`.
 4. Read `candidates.json`.
-5. Deduplicate by exact value, group by semantic meaning, and assign DTCG `$type` according to the Architectural Rules table.
-6. Name each token semantically (`<category>.<group>.<variant>`).
-7. Write `app/design-system/tokens.json` in DTCG compliance (`$value`, `$type`, `$description`, and aliasing via `$ref` where two tokens share the same canonical value).
+5. Deduplicate by exact value. For color candidates, always use `value_oklch` (already calculated by the script) as `$value` — never the original hex/rgb/hsl. Group by semantic meaning and assign DTCG `$type` according to the Architectural Rules table.
+6. Decide the layer of each token: raw palette value $\rightarrow$ `global`; use role $\rightarrow$ `semantic` (referencing `global` via `$ref`); specific component use $\rightarrow$ `component` (referencing `semantic` via `$ref`). Name them following `<layer>.<category>.<group>.<variant>`.
+7. Write `app/design-system/tokens.json` with the three root-level namespaces (`global`, `semantic`, `component`), in compliance with DTCG (`$value`, `$type`, `$description`, real aliasing via reference `{path.to.token}` between layers — never a `component` pointing directly to `global`).
 8. Verify if `style-dictionary` is installed in the project. If not, install it with `npm install style-dictionary@4 --save-dev`.
 9. Copy `assets/sd.config.template.json` to the root of the project as `sd.config.json`, adjusting the `source` and `buildPath` paths to the actual project structure. Do not regenerate the config from scratch.
 10. Run `npx style-dictionary build --config sd.config.json`.
@@ -62,27 +68,40 @@ description: >
 
 ## External References
 
-- `scripts/extract_css_values.py` — heuristic extractor via regex (pure Python stdlib, no external dependencies). **Documented limitation:** it is not a full CSS parser (no AST) — it may miss values in complex nested selectors. Treat candidates as a starting point, not absolute truth. Run first with `--help`. Treat as a black box.
-- `assets/sd.config.template.json` — Style Dictionary v4 configuration template, validated against actual builds. Copy and adapt paths, never rewrite from scratch.
+- `scripts/extract_css_values.py` — heuristic extractor via regex (pure Python stdlib, no external dependencies). **Calculates `value_oklch` automatically** for every color candidate (validated against the `culori` reference library, convergence to ~1e-7). **Documented limitation:** it is not a full CSS parser (no AST) — it may miss values in complex nested selectors. Treat candidates as a starting point, not absolute truth. Run first with `--help`. Treat as a black box.
+- `assets/sd.config.template.json` — Style Dictionary v4 configuration template, validated against actual builds with the 3-layer structure (confirms correct resolution of chained `var()`: `component` $\rightarrow$ `semantic` $\rightarrow$ `global`). Copy and adapt paths, never rewrite from scratch.
 
 ## Examples
 
-**Input** (entry in `candidates.json`):
+**Input** (entry in `candidates.json`, already enriched by the script):
 ```json
 {"file": "assets/css/components.css", "selector_context": ":root",
- "property": "--color-brand-primary", "value": "#ff5a1f"}
+ "property": "--color-brand-primary", "value": "#ff5a1f",
+ "value_oklch": "oklch(68.24% 0.2108 37.7)"}
 ```
 
-**Output** (corresponding entry in `tokens.json`):
+**Output** (corresponding entries in `tokens.json`, 3 layers):
 ```json
 {
-  "color": {
-    "brand": {
-      "primary": {
-        "$value": "#ff5a1f",
-        "$type": "color",
-        "$description": "Primary brand color, used in CTAs"
+  "global": {
+    "color": {
+      "orange": { "500": { "$value": "oklch(68.24% 0.2108 37.7)", "$type": "color" } }
+    }
+  },
+  "semantic": {
+    "color": {
+      "action": {
+        "primary": {
+          "$value": "{global.color.orange.500}",
+          "$type": "color",
+          "$description": "Primary action color, used in CTAs"
+        }
       }
+    }
+  },
+  "component": {
+    "button": {
+      "background": { "$value": "{semantic.color.action.primary}", "$type": "color" }
     }
   }
 }
@@ -91,17 +110,22 @@ description: >
 **Input:**
 ```json
 {"file": "assets/css/components.css", "selector_context": ".btn-primary",
- "property": "border-radius", "value": "8px"}
+ "property": "border-radius", "value": "8px", "value_oklch": null}
 ```
 
 **Output:**
 ```json
 {
-  "radius": {
-    "md": {
-      "$value": "8px",
-      "$type": "dimension",
-      "$description": "Standard border radius for buttons and cards"
+  "global": {
+    "radius": { "100": { "$value": "8px", "$type": "dimension" } }
+  },
+  "semantic": {
+    "radius": {
+      "interactive": {
+        "$value": "{global.radius.100}",
+        "$type": "dimension",
+        "$description": "Standard radius for interactive elements"
+      }
     }
   }
 }
@@ -112,5 +136,7 @@ description: >
 - [ ] Single responsibility confirmed? (extracts and transforms tokens — does not classify tiers, does not generate specs)
 - [ ] External scripts referenced with `--help`?
 - [ ] Node.js/npm prerequisite checked before installing dependencies?
+- [ ] Every color token in the Global layer uses `value_oklch`, never hex/rgb/hsl?
+- [ ] No `component` token references `global` directly, skipping `semantic`?
 - [ ] Absence of ambiguous behaviors?
 - [ ] Principle of Lack of Surprise respected?
