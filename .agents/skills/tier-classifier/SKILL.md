@@ -1,97 +1,73 @@
 ---
 name: tier-classifier
 description: >
-  Use esta Skill sempre que precisar classificar um design-system.html (ou
-  HTML de referência similar) na taxonomia Five-Tier — Foundations, Tokens,
-  Atoms, Molecules, Organisms — gerando um tier-map.json estruturado. Ative
-  para termos como "classificar design system", "mapear componentes em
-  tiers", "Five-Tier audit", "que tier é esse elemento", "organizar atoms
-  molecules organisms", ou quando for necessário decidir em qual pasta de
-  app/design-system/ um componente HTML deve residir. Esta Skill é o ponto
-  de entrada obrigatório (Fase 1) do Workflow design-system-pipeline —
-  invoque-a antes de qualquer extração de tokens ou geração de Component
-  Specs.
+  Use this Skill whenever you need to classify a design-system.html (or similar
+  reference HTML) in the Five-Tier taxonomy — Foundations, Tokens, Atoms,
+  Molecules, Organisms — generating a structured tier-map.json. Activate for
+  terms like "classify design system", "map components in tiers", "Five-Tier
+  audit", "what tier is this element", "organize atoms molecules organisms", or
+  when it is necessary to decide in which folder under app/design-system/ an HTML
+  component should reside. This Skill is the mandatory entry point (Phase 1)
+  of the design-system-pipeline Workflow — invoke it before any token
+  extraction or Component Specs generation.
 ---
 
 # Tier Classifier
 
-## Quando usar esta Skill
+## When to Use This Skill
 
-- O usuário pede para classificar, mapear ou organizar um `design-system.html`
-  na taxonomia Five-Tier.
-- O Workflow `design-system-pipeline` chega à Fase 1.
-- O usuário pergunta em qual tier (Foundations/Tokens/Atoms/Molecules/Organisms)
-  um elemento específico deve residir.
+- The user asks to classify, map, or organize a `design-system.html` in the Five-Tier taxonomy.
+- The `design-system-pipeline` workflow reaches Phase 1.
+- The user asks which tier (Foundations/Tokens/Atoms/Molecules/Organisms) a specific element should reside in.
 
-## Quando NÃO usar esta Skill
+## When NOT to Use This Skill
 
-- Não existe ainda `design-system.html` no diretório de referência (Fase 0
-  manual via prompts Reference Cleaned HTML → Extract HTML Design System não
-  foi executada). Direcione o usuário para rodar os prompts manuais primeiro.
-- O pedido é extrair valores de cor/tipografia/spacing — isso é
-  responsabilidade da Skill `token-pipeline-setup` (Fase 2).
-- O pedido é gerar Component Specs individuais — isso é responsabilidade da
-  Skill `component-spec-generator` (Fase 3).
-- O pedido é auditar divergência (*drift*) entre um DS já estruturado e uma
-  fonte de verdade externa (Figma/legado) — isso é responsabilidade da Skill
-  `design-system-audit`, não desta.
+- `design-system.html` does not yet exist in the reference directory (Phase 0 manual via Reference Cleaned HTML → Extract HTML Design System prompts has not been executed). Instruct the user to run the manual prompts first.
+- The request is to extract color/typography/spacing values — this is the responsibility of the `token-pipeline-setup` skill (Phase 2).
+- The request is to generate individual Component Specs — this is the responsibility of the `component-spec-generator` skill (Phase 3).
+- The request is to audit divergence (drift) between an already structured DS and an external source of truth (Figma/legacy) — this is the responsibility of the `design-system-audit` skill, not this one.
 
-## Regras de Arquitetura
+## Architectural Rules
 
-| Tier | Critério de Classificação |
+| Tier | Classification Criteria |
 |---|---|
-| `foundations` | Prosa de princípios globais — tom, acessibilidade, proibições estéticas. Não é elemento HTML, é regra textual. |
-| `tokens` | Valor determinístico bruto (cor, espaçamento, tipografia) sem comportamento interativo próprio. |
-| `atoms` | Elemento indivisível com comportamento próprio (botão, input, badge). Decompor destrói a função. |
-| `molecules` | 2+ atoms combinados com responsabilidade única conjunta (campo de formulário: label + input + validação). |
-| `organisms` | Zona funcional ampla compondo múltiplas molecules/atoms — geralmente uma seção inteira (header, footer, hero, tabela). |
+| `foundations` | Prose of global principles — voice & tone, accessibility, aesthetic prohibitions. Not an HTML element, but textual rules. |
+| `tokens` | Raw deterministic value (color, spacing, typography) without its own interactive behavior. |
+| `atoms` | Indivisible element with its own behavior (button, input, badge). Decomposing it destroys its function. |
+| `molecules` | 2+ atoms combined with a single joint responsibility (form field: label + input + validation). |
+| `organisms` | Broad functional zone composing multiple molecules/atoms — usually an entire section (header, footer, hero, table). |
 
-- Cada elemento recebe **exatamente um** tier. Nunca atribuir dois tiers ao
-  mesmo elemento — isso indica que o elemento precisa ser decomposto em
-  partes menores antes de classificar.
-- O script `parse_html.py` **nunca** decide tiers. Ele só extrai estrutura
-  (tag, id, classes, comentário de seção, preview de texto). A decisão
-  semântica é sempre do agente — preserva responsabilidade única entre
-  script (determinístico) e Skill (interpretativa).
-- Em caso de ambiguidade entre dois tiers, perguntar ao usuário. Nunca
-  assumir — uma classificação errada na Fase 1 contamina as Fases 2 e 3
-  inteiras do Workflow.
+- Each element receives **exactly one** tier. Never assign two tiers to the same element — this indicates that the element needs to be decomposed into smaller parts before classifying.
+- The `parse_html.py` script **never** decides tiers. It only extracts structure (tag, id, classes, section comment, text preview). The semantic decision is always the agent's responsibility — preserving the single responsibility principle between script (deterministic) and Skill (interpretative).
+- In case of ambiguity between two tiers, ask the user. Never assume — an incorrect classification in Phase 1 contaminates Phases 2 and 3 of the Workflow entirely.
 
-## Fluxo de Execução
+## Execution Flow
 
-1. Confirmar que `design-system.html` existe no diretório de referência.
-   Se não existir, parar e informar o usuário.
-2. Executar `scripts/parse_html.py --input design-system.html --output candidates.json`.
-3. Ler `candidates.json`.
-4. Para cada candidato, classificar em exatamente um tier usando a tabela de
-   Regras de Arquitetura acima.
-5. Descartar candidatos que sejam ruído estrutural puro (wrappers sem função
-   visual ou interativa própria) — registrar a decisão na justificativa.
-6. Escrever `tier-map.json`: lista de objetos `{elemento, tier, justificativa}`,
-   com `justificativa` em uma linha.
-7. Apresentar `tier-map.json` ao usuário e parar. Não prosseguir para a Fase
-   2 do Workflow sem aprovação explícita.
+1. Confirm that `design-system.html` exists in the reference directory. If it does not exist, stop and inform the user.
+2. Run `scripts/parse_html.py --input design-system.html --output candidates.json`.
+3. Read `candidates.json`.
+4. For each candidate, classify it into exactly one tier using the Architectural Rules table above.
+5. Discard candidates that are pure structural noise (wrappers without visual or interactive function of their own) — record this decision in the justification.
+6. Write `tier-map.json`: a list of `{element, tier, justification}` objects, with `justification` in a single line.
+7. Present `tier-map.json` to the user and stop. Do not proceed to Phase 2 of the Workflow without explicit approval.
 
-## Referências Externas
+## External References
 
-- `scripts/parse_html.py` — script Python (stdlib puro, sem dependências
-  externas). Execute primeiro com `--help` para confirmar a assinatura
-  exata antes de invocar. Tratar como caixa-preta: não ler nem modificar o
-  código interno do script.
+- `scripts/parse_html.py` — Python script (pure stdlib, no external dependencies). Run first with `--help` to confirm the exact signature before invoking. Treat as a black box: do not read or modify the script's internal code.
 
-## Exemplos
+## Examples
 
-**Input** (entrada em `candidates.json`):
+**Input** (entry in `candidates.json`):
 ```json
 {"tag": "button", "id": null, "classes": ["btn", "btn-primary"],
- "section_comment": "hero", "text_preview": "Começar agora"}
+ "section_comment": "hero", "text_preview": "Get started now"}
 ```
 
-**Output** (entrada correspondente em `tier-map.json`):
+**Output** (corresponding entry in `tier-map.json`):
 ```json
-{"elemento": "button.btn-primary (CTA da seção hero)",
+{"element": "button.btn-primary (CTA in hero section)",
  "tier": "atoms",
- "justificativa": "Unidade interativa indivisível, sem composição de outros elementos."}
+ "justification": "Indivisible interactive unit, without composition of other elements."}
 ```
 
 **Input:**
@@ -102,14 +78,14 @@ description: >
 
 **Output:**
 ```json
-{"elemento": "header#main-nav",
+{"element": "header#main-nav",
  "tier": "organisms",
- "justificativa": "Zona funcional de navegação global, compõe múltiplos atoms (logo, links)."}
+ "justification": "Global navigation functional zone, composes multiple atoms (logo, links)."}
 ```
 
-## Checklist de Validação
+## Validation Checklist
 
-- [ ] Responsabilidade única confirmada? (classifica — não extrai tokens, não gera specs)
-- [ ] Scripts externos referenciados com `--help`?
-- [ ] Ausência de comportamentos ambíguos? (regra de perguntar em caso de dúvida está explícita)
-- [ ] Principle of Lack of Surprise respeitado?
+- [ ] Single responsibility confirmed? (classifies — does not extract tokens, does not generate specs)
+- [ ] External scripts referenced with `--help`?
+- [ ] Absence of ambiguous behaviors? (rule to ask in case of doubt is explicit)
+- [ ] Principle of Lack of Surprise respected?

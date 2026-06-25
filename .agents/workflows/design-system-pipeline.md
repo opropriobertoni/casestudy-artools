@@ -1,63 +1,63 @@
 ---
 title: Design System Pipeline
-description: Orquestra classificação Five-Tier, extração de Design Tokens e geração de Component Specs a partir de um design-system.html já extraído (Fase 0 manual).
+description: Orchestrates Five-Tier classification, Design Tokens extraction, and Component Specs generation from an already extracted design-system.html (Phase 0 manual).
 ---
 
 # Design System Pipeline
 
-## Pré-condição (Fase 0 — manual, fora do Antigravity)
-Antes de invocar este Workflow, confirme que já existem no diretório de referência:
-- `design-system.html` (output do prompt Extract HTML Design System)
-- `STACK.md` (output do prompt Reference Cleaned HTML)
-- `assets/css/`, `assets/js/`, `assets/images/svg/` já extraídos
+## Pre-condition (Phase 0 — manual, outside Antigravity)
+Before invoking this workflow, confirm that the following exist in the reference directory:
+- `design-system.html` (output of the Extract HTML Design System prompt)
+- `STACK.md` (output of the Reference Cleaned HTML prompt)
+- `assets/css/`, `assets/js/`, `assets/images/svg/` already extracted
 
-Se algum destes não existir: PARAR e instruir o usuário a rodar os prompts Reference Cleaned HTML → Extract HTML Design System manualmente primeiro. Não tentar substituir essa etapa.
-
----
-
-## Fase 1 — Classificação Five-Tier
-1. Carregar a Skill `tier-classifier`.
-2. Ler `design-system.html` seção por seção.
-3. Classificar cada elemento em exatamente um tier: `foundations`, `tokens`, `atoms`, `molecules`, `organisms`.
-4. Escrever `tier-map.json`: lista de `{elemento, tier, justificativa}` (justificativa em uma linha, sem prosa adicional).
-5. PARAR. Apresentar `tier-map.json` ao usuário.
-6. NÃO prosseguir para a Fase 2 sem aprovação explícita.
-7. Em caso de ambiguidade entre dois tiers: perguntar ao usuário. NUNCA assumir.
+If any of these do not exist: STOP and instruct the user to run the Reference Cleaned HTML → Extract HTML Design System prompts manually first. Do not attempt to bypass this step.
 
 ---
 
-## Fase 2 — Extração de Design Tokens
-1. Carregar a Skill `token-pipeline-setup`.
-2. Usar apenas os elementos aprovados como `tokens` no `tier-map.json`.
-3. Extrair cor, tipografia e spacing do CSS original (`assets/css/`).
-4. Escrever `app/design-system/tokens.json` em conformidade DTCG (`$value`, `$type`, `$description`, aliasing onde aplicável).
-5. Rodar Style Dictionary v4 (`convertToDTCG` se houver tokens legados misturados) para gerar `app/design-system/tokens.css`.
-6. PARAR. Apresentar diff de `tokens.json` e `tokens.css`.
-7. NÃO prosseguir para a Fase 3 sem aprovação explícita.
+## Phase 1 — Five-Tier Classification
+1. Load the `tier-classifier` skill.
+2. Read `design-system.html` section by section.
+3. Classify each element into exactly one tier: `foundations`, `tokens`, `atoms`, `molecules`, `organisms`.
+4. Write `tier-map.json`: a list of `{element, tier, justification}` (justification in a single line, with no additional prose).
+5. STOP. Present `tier-map.json` to the user.
+6. DO NOT proceed to Phase 2 without explicit approval.
+7. In case of ambiguity between two tiers: ask the user. NEVER make assumptions.
 
 ---
 
-## Fase 3 — Geração de Component Specs
-1. Carregar a Skill `component-spec-generator`.
-2. Para cada elemento classificado como `atoms`, `molecules` ou `organisms`:
-   - Gerar spec em `app/design-system/specs/<tier>/<nome>.md`.
-   - Incluir estados: `default`, `hover`, `active`, `focus`, `disabled` — apenas os que existem na referência original.
-   - Limitar cada spec a 2–5KB.
+## Phase 2 — Design Tokens Extraction
+1. Load the `token-pipeline-setup` skill.
+2. Use only the elements approved as `tokens` in `tier-map.json`.
+3. Extract color, typography, and spacing from the original CSS (`assets/css/`).
+4. Write `app/design-system/tokens.json` in compliance with DTCG (`$value`, `$type`, `$description`, aliasing where applicable).
+5. Run Style Dictionary v4 (`convertToDTCG` if there are mixed legacy tokens) to generate `app/design-system/tokens.css`.
+6. STOP. Present the diff of `tokens.json` and `tokens.css`.
+7. DO NOT proceed to Phase 3 without explicit approval.
+
+---
+
+## Phase 3 — Component Specs Generation
+1. Load the `component-spec-generator` skill.
+2. For each element classified as `atoms`, `molecules`, or `organisms`:
+   - Generate spec in `app/design-system/specs/<tier>/<name>.md`.
+   - Include states: `default`, `hover`, `active`, `focus`, `disabled` — only those that exist in the original reference.
+   - Limit each spec to 2–5KB.
    - YAML Frontmatter: `name`, `tier`, `status: proposed`.
-3. PROIBIDO incluir código `<template>` completo ou tokens transcritos dentro do spec — usar apenas referência (`$ref`) ao `tokens.json`.
-4. PARAR. Apresentar lista de specs gerados.
+3. IT IS FORBIDDEN to include the full `<template>` code or transcribed tokens inside the spec — use only a reference (`$ref`) to `tokens.json`.
+4. STOP. Present the list of generated specs.
 
 ---
 
-## Fase 4 — Consolidação do DESIGN.md
-1. Sem Skill dedicada. Executar seguindo a Rule `design-system-architecture.md`.
-2. Compilar YAML Frontmatter (propriedades semânticas + hexadecimais brutos) seguido de prosa de Foundations (Voice & Tone, acessibilidade, proibições estéticas).
-3. Escrever `app/design-system/DESIGN.md`.
-4. Apresentar resumo final: contagem de tokens, atoms, molecules, organisms gerados.
+## Phase 4 — DESIGN.md Consolidation
+1. Without dedicated Skill. Execute following the `design-system-architecture.md` rule.
+2. Compile YAML Frontmatter (semantic properties + raw hexadecimals) followed by Foundations prose (Voice & Tone, accessibility, aesthetic prohibitions).
+3. Write `app/design-system/DESIGN.md`.
+4. Present the final summary: count of generated tokens, atoms, molecules, and organisms.
 
 ---
 
-## Regras Transversais
-- Toda PARADA exige aprovação explícita do usuário antes de prosseguir para a fase seguinte.
-- Nomenclatura de classes, atributos e valores DEVE ser extraída literalmente do `design-system.html`. NUNCA inventar ou aproximar.
-- Se o usuário rejeitar uma classificação na Fase 1, corrigir `tier-map.json` e repetir a aprovação antes de continuar.
+## Transversal Rules
+- Every STOP requires explicit user approval before proceeding to the next phase.
+- Class naming, attributes, and values MUST be extracted literally from `design-system.html`. NEVER invent or approximate.
+- If the user rejects a classification in Phase 1, correct `tier-map.json` and seek approval again before continuing.

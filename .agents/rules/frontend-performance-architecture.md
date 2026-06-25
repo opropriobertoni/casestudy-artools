@@ -4,7 +4,7 @@ description: Apply for performance optimization, system architecture, or securit
 ---
 
 # Frontend Rules — 03. Performance & Architecture
-*System-level decisions revisited during optimization or stack-architecture moments, not during line-by-line coding: rendering pipeline, network loading, main-thread runtime, rendering paradigm, microfrontends, and security. Part 3 of 3 — see also `01-foundations.md` and `02-components-interactivity.md`.*
+*System-level decisions revisited during optimization or stack-architecture moments, not during line-by-line coding: rendering pipeline, network loading, main-thread runtime, rendering paradigm, microfrontends, and security. Part 3 of 3 — see also `frontend-foundations.md` and `frontend-components-interactivity.md`.*
 
 **Table of Contents**
 1. Rendering, Network & Runtime Performance

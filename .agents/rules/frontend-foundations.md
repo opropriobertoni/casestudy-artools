@@ -3,7 +3,7 @@ trigger: always_on
 ---
 
 # Frontend Rules — 01. Foundations
-*Project-level setup configured once at project start: reset, naming architecture, design tokens, base semantics, and TypeScript config. Part 1 of 3 — see also `02-components-interactivity.md` and `03-performance-architecture.md`. Naming methodology: CUBE CSS (BEM superseded).*
+*Project-level setup configured once at project start: reset, naming architecture, design tokens, base semantics, and TypeScript config. Part 1 of 3 — see also `frontend-components-interactivity.md` and `frontend-performance-architecture.md`. Naming methodology: CUBE CSS (BEM superseded).*
 
 **Table of Contents**
 1. Reset & Base Behavior

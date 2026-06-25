@@ -4,7 +4,7 @@ description: Apply when building or editing a UI component: Web Components/Shado
 ---
 
 # Frontend Rules — 02. Components & Interactivity
-*Rules consulted per-component during day-to-day coding: visual isolation, native interactive APIs, JS design patterns, state management, and animation/3D engines. Part 2 of 3 — see also `01-foundations.md` and `03-performance-architecture.md`.*
+*Rules consulted per-component during day-to-day coding: visual isolation, native interactive APIs, JS design patterns, state management, and animation/3D engines. Part 2 of 3 — see also `frontend-foundations.md` and `frontend-performance-architecture.md`.*
 
 **Table of Contents**
 1. Visual Isolation & Web Components
