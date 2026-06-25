@@ -1,0 +1,22 @@
+{
+  "source": ["app/design-system/tokens.json"],
+  "platforms": {
+    "css": {
+      "transformGroup": "css",
+      "buildPath": "app/design-system/",
+      "files": [
+        {
+          "destination": "tokens.css",
+          "format": "css/variables",
+          "options": {
+            "outputReferences": true
+          }
+        }
+      ]
+    }
+  },
+  "log": {
+    "warnings": "warn",
+    "verbosity": "verbose"
+  }
+}
