@@ -1,0 +1,17 @@
+{
+  "RtkDebugHook": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/bertoni/Developer/projects/artools/.agents/hooks/rtk-hook-debug.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
